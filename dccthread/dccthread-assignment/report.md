@@ -14,8 +14,8 @@ grupo.  Substitua marcadores `XX` pela contribuição de cada membro
 do grupo no desenvolvimento do trabalho (os valores devem somar
 100%).
 
-  * Nome <email@domain> XX%
-  * Nome <email@domain> XX%
+  * Nome gustavocunha@dcc.ufmg.br 50%
+  * Nome gabrimartinsjuarez@ufmg.br 50%
 
 3. Referências bibliográficas
 
