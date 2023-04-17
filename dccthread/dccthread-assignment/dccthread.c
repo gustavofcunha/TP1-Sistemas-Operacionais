@@ -15,6 +15,7 @@ typedef struct dccthread {
     bool cedido;
     bool esta_na_lista_espera;
     bool esta_na_lista_prontos;
+    dccthread_t* esperando;
 
 } dccthread_t;
 
@@ -42,6 +43,7 @@ void dccthread_init(void (*func)(int), int param){
     gerente->id = -1;
     strcpy(gerente->nome, "gerente");
     gerente->cedido = false;
+    gerente->esperando = NULL;
 
     principal = dccthread_create("principal", func, param);
 
@@ -71,6 +73,7 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
     strcpy(nova_thread->nome, name);
     nova_thread->esta_na_lista_espera = false;
     nova_thread->esta_na_lista_prontos = true;
+    nova_thread->esperando = NULL;
 
     dlist_push_right(lista_prontos, nova_thread);
     makecontext(&nova_thread->contexto, (void*) func, 1, param);
@@ -106,18 +109,31 @@ const char* dccthread_name(dccthread_t *tid){
 }
 /*-gu*/
 
+/*verifica se e1 esta esperando e2*/
+int esta_esperando(const void *e1, const void *e2, void *userdata){
+	dccthread_t* e_list = (dccthread_t*) e1;
+	dccthread_t* e_exit = (dccthread_t*) e2;
+
+	if(e_exit == e_list->esperando){
+		return 0;
+    }
+	else{
+		return 1;
+    }
+}
+
+
 /*gu-*/
 void dccthread_exit(void){
-    /*termina a thread atual*/
-
     dccthread_t* atual = dccthread_self();
-    /*caso nao haja nenhuma funcao esperando*/
-    if(dlist_empty(lista_espera)){
-       /*remove processo atual e poe gerente*/
-        dlist_pop_left(lista_espera);
-        atual->esta_na_lista_espera = false;
-        atual->esta_na_lista_prontos = true;
-        dlist_push_right(lista_prontos, atual);
+
+    dccthread_t* processo_em_espera = 
+    (dccthread_t *) dlist_find_remove(lista_espera, atual, esta_esperando, NULL);
+
+    if(processo_em_espera != NULL){
+        processo_em_espera->esta_na_lista_espera = false;
+        processo_em_espera->esta_na_lista_prontos = true;
+        dlist_push_right(lista_prontos, processo_em_espera);
     }
 
     /*muda contexto para thread gerente*/
