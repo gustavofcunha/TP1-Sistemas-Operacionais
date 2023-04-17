@@ -138,7 +138,23 @@ void dccthread_exit(void){
     }
 
     /*muda contexto para thread gerente*/
-    swapcontext(&atual->contexto, &gerente->contexto);
+    setcontext(&gerente->contexto);
+}
+/*-gu*/
+
+/*gu-*/
+void dccthread_wait(dccthread_t *tid){
+    dccthread_t* atual = dccthread_self();
+
+    if(tid->esta_na_lista_espera || tid->esta_na_lista_prontos){
+		atual->esta_na_lista_prontos = 0;
+		atual->esta_na_lista_espera = 1;
+		atual->esperando = tid;
+		dlist_push_right(lista_espera, atual);
+
+		swapcontext(&atual->contexto, &gerente->contexto);
+	}    
+
 }
 /*-gu*/
 
