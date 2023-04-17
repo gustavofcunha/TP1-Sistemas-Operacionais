@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>  
+#include <string.h>
 
 #include "dlist.h"
 #include "dccthread.h"
@@ -24,8 +25,6 @@ dccthread_t *principal;
 int contador_thread = 0;
 
 void dccthread_init(void (*func)(int), int param){
-    //inicializacao das estruturas internas da biblioteca
-
     //ga-
     lista_prontos = dlist_create();
 	lista_espera = dlist_create();
@@ -39,7 +38,7 @@ void dccthread_init(void (*func)(int), int param){
 	gerente->contexto.uc_stack.ss_flags = 0;
 
     gerente->id = -1;
-    *gerente->nome = "gerente";
+    strcpy(gerente->nome, "gerente");
     gerente->cedido = false;
 
     principal = dccthread_create("principal", func, param);
@@ -67,7 +66,7 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
 	nova_thread->contexto.uc_stack.ss_flags = 0;
 
 	nova_thread->id = contador_thread; contador_thread++;
-    *nova_thread->nome = name;
+    strcpy(nova_thread->nome, name);
 
     dlist_push_right(lista_prontos, nova_thread);
     makecontext(&nova_thread->contexto, (void*) func, 1, param);
@@ -98,7 +97,7 @@ dccthread_t* dccthread_self(void){
 
 //gu-
 const char* dccthread_name(dccthread_t *tid){
-    //retorna contexto da thread em execucao
+    //retorna nome da thread recebida como parametro
     return tid->nome;
 }
 //-gu
