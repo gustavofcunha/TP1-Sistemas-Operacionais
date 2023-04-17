@@ -102,3 +102,9 @@ const char* dccthread_name(dccthread_t *tid){
 }
 /*-gu*/
 
+
+int main(){
+
+    return 0;
+}
+

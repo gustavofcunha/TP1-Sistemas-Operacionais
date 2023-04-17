@@ -1,16 +1,21 @@
-all: dccthread
+#gu-#
+CC = gcc
+OBJS = dccthread.o dlist.o
+HDRS = dccthread.h dlist.h 
 
-dccthread:	test1.o	dccthread.o	dlist.o
-	gcc -o	dccthread	test1.o	dccthread.o	dlist.o
+EXE = dccthread
 
-test1.o:	test1.o	dccthread.h
-	gcc -o	test1.o 	test1.c 	-c -W -Wall -ansi -pedantic
+all: $(EXE)
 
-dccthread.o:	dccthread.c	dccthread.h	dlist.h
-	gcc -o	dccthread.o	dccthread.c	-c -W -Wall -ansi -pedantic
+dccthread: $(OBJS)
+	$(CC) -g -o dccthread $(OBJS)
 
-dlist.o:	dlist.c	dlist.h
-	gcc -o	dlist.o	dlist.c -c -W -Wall -ansi -pedantic
+dccthread.o: $(HDRS) dccthread.c
+	$(CC) -g -o dccthread.o -c dccthread.c
 
+dlist.o: $(HDRS) dlist.c
+	$(CC) -g -o dlist.o -c dlist.c
+	
 clean:
-	rm -rf *.o *~ dccthread
+	rm $(EXE) $(OBJS)
+#-gu#
