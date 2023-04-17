@@ -25,7 +25,7 @@ dccthread_t *principal;
 int contador_thread = 0;
 
 void dccthread_init(void (*func)(int), int param){
-    //ga-
+    /*ga-*/
     lista_prontos = dlist_create();
 	lista_espera = dlist_create();
 
@@ -52,10 +52,10 @@ void dccthread_init(void (*func)(int), int param){
 
         free(temp);
 	}
-    //-ga
+    /*-ga*/
 }
 
-//ga-
+/*ga-*/
 dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
     dccthread_t *nova_thread = (dccthread_t*) malloc(sizeof(dccthread_t));
     getcontext(&nova_thread->contexto);
@@ -73,32 +73,32 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
 
     return nova_thread;
 }
-//-ga
+/*-ga*/
 
-//gu-
+/*gu-*/
 void dccthread_yield(void){
-    //obtem contexto da thread atual e coloca no final da lista
+    /*obtem contexto da thread atual e coloca no final da lista*/
     dccthread_t* contexto_atual = dccthread_self();
     contexto_atual->cedido = true;
     dlist_push_right(lista_prontos, contexto_atual);
 
-    //muda de contexto para thread gerente
+    /*muda de contexto para thread gerente*/
     swapcontext(&contexto_atual->contexto, &gerente->contexto);
 }
-//-gu
+/*-gu*/
 
-//gu-
+/*gu-*/
 dccthread_t* dccthread_self(void){
-    //retorna contexto da thread em execucao
+    /*retorna contexto da thread em execucao*/
     return lista_prontos->head->data;
 }
-//-gu
+/*-gu*/
 
 
-//gu-
+/*gu-*/
 const char* dccthread_name(dccthread_t *tid){
-    //retorna nome da thread recebida como parametro
+    /*retorna nome da thread recebida como parametro*/
     return tid->nome;
 }
-//-gu
+/*-gu*/
 
