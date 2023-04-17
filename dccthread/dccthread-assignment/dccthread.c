@@ -109,6 +109,7 @@ const char* dccthread_name(dccthread_t *tid){
 }
 /*-gu*/
 
+/*gu-*/
 /*verifica se e1 esta esperando e2*/
 int esta_esperando(const void *e1, const void *e2, void *userdata){
 	dccthread_t* e_list = (dccthread_t*) e1;
@@ -121,7 +122,7 @@ int esta_esperando(const void *e1, const void *e2, void *userdata){
 		return 1;
     }
 }
-
+/*-gu*/
 
 /*gu-*/
 void dccthread_exit(void){
