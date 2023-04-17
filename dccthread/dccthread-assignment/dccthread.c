@@ -13,6 +13,8 @@ typedef struct dccthread {
     char nome[DCCTHREAD_MAX_NAME_SIZE];
     ucontext_t contexto;
     bool cedido;
+    bool esta_na_lista_espera;
+    bool esta_na_lista_prontos;
 
 } dccthread_t;
 
@@ -67,6 +69,8 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
 
 	nova_thread->id = contador_thread; contador_thread++;
     strcpy(nova_thread->nome, name);
+    nova_thread->esta_na_lista_espera = false;
+    nova_thread->esta_na_lista_prontos = true;
 
     dlist_push_right(lista_prontos, nova_thread);
     makecontext(&nova_thread->contexto, (void*) func, 1, param);
@@ -102,6 +106,24 @@ const char* dccthread_name(dccthread_t *tid){
 }
 /*-gu*/
 
+/*gu-*/
+void dccthread_exit(void){
+    /*termina a thread atual*/
+
+    dccthread_t* atual = dccthread_self();
+    /*caso nao haja nenhuma funcao esperando*/
+    if(dlist_empty(lista_espera)){
+       /*remove processo atual e poe gerente*/
+        dlist_pop_left(lista_espera);
+        atual->esta_na_lista_espera = false;
+        atual->esta_na_lista_prontos = true;
+        dlist_push_right(lista_prontos, atual);
+    }
+
+    /*muda contexto para thread gerente*/
+    swapcontext(&atual->contexto, &gerente->contexto);
+}
+/*-gu*/
 
 int main(){
 

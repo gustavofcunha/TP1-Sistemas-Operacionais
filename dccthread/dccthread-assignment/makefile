@@ -1,5 +1,5 @@
 #gu-#
-CC = gcc
+CC = gcc -Wall
 OBJS = dccthread.o dlist.o
 HDRS = dccthread.h dlist.h 
 
