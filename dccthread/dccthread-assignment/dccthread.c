@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>  
 
 #include "dlist.h"
 #include "dccthread.h"
@@ -10,6 +11,8 @@ typedef struct dccthread {
     int id;
     char nome[DCCTHREAD_MAX_NAME_SIZE];
     ucontext_t contexto;
+    bool cedido;
+
 } dccthread_t;
 
 struct dlist *lista_prontos;
@@ -37,6 +40,7 @@ void dccthread_init(void (*func)(int), int param){
 
     gerente->id = -1;
     *gerente->nome = "gerente";
+    gerente->cedido = false;
 
     principal = dccthread_create("principal", func, param);
 
@@ -50,15 +54,9 @@ void dccthread_init(void (*func)(int), int param){
         free(temp);
 	}
     //-ga
-
-    //criacao thread gerente
-    //dccthread_create("gerente", dccthread_yield, 0);
-
-    //criacao de nova thread para executar func
-    //dccthread_create("principal", func, param);
 }
 
-//ga
+//ga-
 dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
     dccthread_t *nova_thread = (dccthread_t*) malloc(sizeof(dccthread_t));
     getcontext(&nova_thread->contexto);
@@ -69,7 +67,7 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
 	nova_thread->contexto.uc_stack.ss_flags = 0;
 
 	nova_thread->id = contador_thread; contador_thread++;
-    *nova_thread->nome = "gerente";
+    *nova_thread->nome = name;
 
     dlist_push_right(lista_prontos, nova_thread);
     makecontext(&nova_thread->contexto, (void*) func, 1, param);
@@ -77,3 +75,31 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
     return nova_thread;
 }
 //-ga
+
+//gu-
+void dccthread_yield(void){
+    //obtem contexto da thread atual e coloca no final da lista
+    dccthread_t* contexto_atual = dccthread_self();
+    contexto_atual->cedido = true;
+    dlist_push_right(lista_prontos, contexto_atual);
+
+    //muda de contexto para thread gerente
+    swapcontext(&contexto_atual->contexto, &gerente->contexto);
+}
+//-gu
+
+//gu-
+dccthread_t* dccthread_self(void){
+    //retorna contexto da thread em execucao
+    return lista_prontos->head->data;
+}
+//-gu
+
+
+//gu-
+const char* dccthread_name(dccthread_t *tid){
+    //retorna contexto da thread em execucao
+    return tid->nome;
+}
+//-gu
+
