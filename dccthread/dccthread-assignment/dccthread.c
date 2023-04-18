@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <stdbool.h>  
 #include <string.h>
-
+#include <signal.h>
+#include <time.h>
 #include "dlist.h"
 #include "dccthread.h"
 #include "ucontext.h"
@@ -16,16 +17,21 @@ typedef struct dccthread {
     bool esta_na_lista_espera;
     bool esta_na_lista_prontos;
     dccthread_t* esperando;
+    int id_timer;
 
 } dccthread_t;
 
 struct dlist *lista_prontos;
 struct dlist *lista_espera;
 
+//evento que indica quando o timer de sleep expirou
+struct sigevent sleep;
+
 dccthread_t *gerente;
 dccthread_t *principal;
 
 int contador_thread = 0;
+int sleeptid = 1;
 
 void dccthread_init(void (*func)(int), int param){
     /*ga-*/
@@ -158,4 +164,27 @@ void dccthread_wait(dccthread_t *tid){
 }
 /*-gu*/
 
+/*gu-*/
+void dccthread_sleep(struct timespec ts){
+    //cria novo timer
+	timer_t id_timer;
+	timer_create(CLOCK_REALTIME, &sleep, &id_timer);
+
+    struct itimerspec its;
+	its.it_value = ts;
+
+	dccthread_t* atual = dccthread_self();
+	atual->id_timer = sleeptid;
+	sleeptid++;
+
+	atual->esta_na_lista_prontos = 0;
+	atual->esta_na_lista_espera = 1;
+	dlist_push_right(lista_espera, atual);
+
+    //arma o timer criado acima (com id id_timer)
+	timer_settime(id_timer, 0, &its, NULL);
+
+	swapcontext(&atual->contexto, &gerente->contexto);
+}
+/*-gu*/
 
