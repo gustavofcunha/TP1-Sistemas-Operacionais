@@ -158,8 +158,4 @@ void dccthread_wait(dccthread_t *tid){
 }
 /*-gu*/
 
-int main(){
-
-    return 0;
-}
 
