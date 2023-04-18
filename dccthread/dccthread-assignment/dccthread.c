@@ -103,8 +103,8 @@ dccthread_t* dccthread_self(void){
 
 
 /*gu-*/
+/*retorna nome da thread recebida como parametro*/
 const char* dccthread_name(dccthread_t *tid){
-    /*retorna nome da thread recebida como parametro*/
     return tid->nome;
 }
 /*-gu*/
