@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>  
+#include <stdbool.h>
 #include <string.h>
 #include <signal.h>
 #include <time.h>
+#include <ucontext.h>
 #include "dlist.h"
 #include "dccthread.h"
-#include "ucontext.h"
 
 
 typedef struct dccthread {
@@ -134,7 +134,7 @@ int esta_esperando(const void *e1, const void *e2, void *userdata){
 void dccthread_exit(void){
     dccthread_t* atual = dccthread_self();
 
-    dccthread_t* processo_em_espera = 
+    dccthread_t* processo_em_espera =
     (dccthread_t *) dlist_find_remove(lista_espera, atual, esta_esperando, NULL);
 
     if(processo_em_espera != NULL){
@@ -159,7 +159,7 @@ void dccthread_wait(dccthread_t *tid){
 		dlist_push_right(lista_espera, atual);
 
 		swapcontext(&atual->contexto, &gerente->contexto);
-	}    
+	}
 
 }
 /*-gu*/
@@ -187,4 +187,3 @@ void dccthread_sleep(struct timespec ts){
 	swapcontext(&atual->contexto, &gerente->contexto);
 }
 /*-gu*/
-

@@ -17,5 +17,5 @@ if ! diff tests/test$i.out test$i.out &> /dev/null ; then
     exit 1
 fi
 
-# rm -f test$i.out test$i.err
+#rm -f test$i.out test$i.err
 exit 0
