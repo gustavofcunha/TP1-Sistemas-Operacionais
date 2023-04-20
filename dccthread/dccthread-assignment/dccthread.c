@@ -60,7 +60,11 @@ void dccthread_init(void (*func)(int), int param){
 		swapcontext(&gerente->contexto, &temp->contexto);
 		dlist_pop_left(lista_prontos);
 
-        free(temp);
+        if(temp->cedido == 1){
+            temp->esta_na_lista_prontos = 0;
+        }
+
+        //free(temp);
 	}
     /*-ga*/
 }
