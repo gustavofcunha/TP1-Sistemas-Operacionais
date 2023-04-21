@@ -63,9 +63,9 @@ void dccthread_init(void (*func)(int), int param){
         if(temp->cedido == 1){
             temp->esta_na_lista_prontos = 0;
         }
-
         //free(temp);
 	}
+    exit(EXIT_SUCCESS);
     /*-ga*/
 }
 

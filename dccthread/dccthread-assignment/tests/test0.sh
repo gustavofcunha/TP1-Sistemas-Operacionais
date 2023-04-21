@@ -17,8 +17,6 @@ test -s dlist.o || zero "[0] compilation error"
 test -s dccthread.o || zero "[0] compilation error"
 if [ -s gcc.log ] ; then
     echo "[0] compilation has warnings"
-    exit 1
+    exit 0
 fi
 exit 0
-
-

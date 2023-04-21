@@ -1,4 +1,0 @@
-dccthread.c: In function ‘dccthread_init’:
-dccthread.c:66:1: warning: ‘noreturn’ function does return
- }
- ^

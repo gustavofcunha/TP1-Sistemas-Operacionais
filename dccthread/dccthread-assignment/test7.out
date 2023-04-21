@@ -1,0 +1,4 @@
+principal creating t0
+principal yielding t0
+t0 exiting
+principal waiting t0
