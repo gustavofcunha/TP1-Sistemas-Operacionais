@@ -31,4 +31,3 @@ int main(int argc, char **argv)
 {
 	dccthread_init(test, 5);
 }
-

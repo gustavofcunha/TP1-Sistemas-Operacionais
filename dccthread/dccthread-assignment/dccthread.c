@@ -14,11 +14,11 @@ typedef struct dccthread {
     char nome[DCCTHREAD_MAX_NAME_SIZE];
     ucontext_t contexto;
     bool cedido;
-    bool esta_na_lista_espera;
-    bool esta_na_lista_prontos;
+    bool na_lista_espera;
+    bool na_lista_prontos;
     dccthread_t* esperando;
     int id_timer;
-
+    int stimerid;
 } dccthread_t;
 
 struct dlist *lista_prontos;
@@ -48,6 +48,7 @@ void dccthread_init(void (*func)(int), int param){
 
     gerente->id = -1;
     strcpy(gerente->nome, "gerente");
+
     gerente->cedido = false;
     gerente->esperando = NULL;
 
@@ -61,10 +62,10 @@ void dccthread_init(void (*func)(int), int param){
 		dlist_pop_left(lista_prontos);
 
         if(temp->cedido == 1){
-            temp->esta_na_lista_prontos = 0;
+            temp->na_lista_prontos = 0;
         }
-        //free(temp);
 	}
+
     exit(EXIT_SUCCESS);
     /*-ga*/
 }
@@ -81,13 +82,13 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
 
 	nova_thread->id = contador_thread; contador_thread++;
     strcpy(nova_thread->nome, name);
-    nova_thread->esta_na_lista_espera = false;
-    nova_thread->esta_na_lista_prontos = true;
+
+    nova_thread->na_lista_espera = false;
+    nova_thread->na_lista_prontos = true;
     nova_thread->esperando = NULL;
-
     dlist_push_right(lista_prontos, nova_thread);
-    makecontext(&nova_thread->contexto, (void*) func, 1, param);
 
+    makecontext(&nova_thread->contexto, (void*) func, 1, param);
     return nova_thread;
 }
 /*-ga*/
@@ -96,6 +97,7 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
 void dccthread_yield(void){
     /*obtem contexto da thread atual e coloca no final da lista*/
     dccthread_t* contexto_atual = dccthread_self();
+
     contexto_atual->cedido = true;
     dlist_push_right(lista_prontos, contexto_atual);
 
@@ -110,7 +112,6 @@ dccthread_t* dccthread_self(void){
     return lista_prontos->head->data;
 }
 /*-gu*/
-
 
 /*gu-*/
 /*retorna nome da thread recebida como parametro*/
@@ -127,12 +128,22 @@ int esta_esperando(const void *e1, const void *e2, void *userdata){
 
 	if(e_exit == e_list->esperando){
 		return 0;
-    }
-	else{
+    } else {
 		return 1;
     }
 }
 /*-gu*/
+
+/*ga*/
+int esta_esperando_sleep(const void *e1, const void *e2, void *userdata){
+	dccthread_t* e_list = (dccthread_t*) e1;
+	dccthread_t* e_dummy = (dccthread_t*) e2;
+	if(e_list->stimerid == e_dummy->stimerid)
+		return 0;
+	else
+		return 1;
+}
+/*-ga*/
 
 /*gu-*/
 void dccthread_exit(void){
@@ -142,8 +153,8 @@ void dccthread_exit(void){
     (dccthread_t *) dlist_find_remove(lista_espera, atual, esta_esperando, NULL);
 
     if(processo_em_espera != NULL){
-        processo_em_espera->esta_na_lista_espera = false;
-        processo_em_espera->esta_na_lista_prontos = true;
+        processo_em_espera->na_lista_espera = false;
+        processo_em_espera->na_lista_prontos = true;
         dlist_push_right(lista_prontos, processo_em_espera);
     }
 
@@ -156,15 +167,14 @@ void dccthread_exit(void){
 void dccthread_wait(dccthread_t *tid){
     dccthread_t* atual = dccthread_self();
 
-    if(tid->esta_na_lista_espera || tid->esta_na_lista_prontos){
-		atual->esta_na_lista_prontos = 0;
-		atual->esta_na_lista_espera = 1;
+    if(tid->na_lista_espera || tid->na_lista_prontos){
+		atual->na_lista_prontos = 0;
+		atual->na_lista_espera = 1;
 		atual->esperando = tid;
 		dlist_push_right(lista_espera, atual);
 
 		swapcontext(&atual->contexto, &gerente->contexto);
 	}
-
 }
 /*-gu*/
 
@@ -181,8 +191,8 @@ void dccthread_sleep(struct timespec ts){
 	atual->id_timer = sleeptid;
 	sleeptid++;
 
-	atual->esta_na_lista_prontos = 0;
-	atual->esta_na_lista_espera = 1;
+	atual->na_lista_prontos = 0;
+	atual->na_lista_espera = 1;
 	dlist_push_right(lista_espera, atual);
 
     //arma o timer criado acima (com id id_timer)
