@@ -51,7 +51,7 @@ void dccthread_init(void (*func)(int), int param){
     gerente->cedido = false;
     gerente->esperando = NULL;
 
-    principal = dccthread_create("principal", func, param);
+    principal = dccthread_create("main", func, param);
 
     while(!dlist_empty(lista_prontos)){
 		dccthread_t *temp = (dccthread_t*) malloc(sizeof(dccthread_t));

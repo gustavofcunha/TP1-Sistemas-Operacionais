@@ -1,30 +1,30 @@
-principal creating t0
-principal yielding t0
+main creating t0
+main yielding t0
 t0 yielding
-principal waiting t0
-principal continuing
-principal creating t1
-principal yielding t1
+main waiting t0
+main continuing
+main creating t1
+main yielding t1
 t0 exiting
 t1 yielding
-principal waiting t1
-principal continuing
-principal creating t2
-principal yielding t2
+main waiting t1
+main continuing
+main creating t2
+main yielding t2
 t1 exiting
 t2 yielding
-principal waiting t2
-principal continuing
-principal creating t3
-principal yielding t3
+main waiting t2
+main continuing
+main creating t3
+main yielding t3
 t2 exiting
 t3 yielding
-principal waiting t3
-principal continuing
-principal creating t4
-principal yielding t4
+main waiting t3
+main continuing
+main creating t4
+main yielding t4
 t3 exiting
 t4 yielding
-principal waiting t4
-principal continuing
+main waiting t4
+main continuing
 t4 exiting
