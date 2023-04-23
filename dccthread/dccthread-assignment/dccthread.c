@@ -26,6 +26,8 @@ struct dlist *lista_espera;
 
 //evento que indica quando o timer de sleep expirou
 struct sigevent sleep;
+//acao ao receber chamada de sistema do sleep
+struct sigaction acao_sleep;
 
 dccthread_t *gerente;
 dccthread_t *principal;
@@ -33,7 +35,42 @@ dccthread_t *principal;
 int contador_thread = 0;
 int sleeptid = 1;
 
+/*ga*/
+int esta_esperando_sleep(const void *e1, const void *e2, void *userdata){
+	dccthread_t* e_list = (dccthread_t*) e1;
+	dccthread_t* e_dummy = (dccthread_t*) e2;
+	if(e_list->stimerid == e_dummy->stimerid)
+		return 0;
+	else
+		return 1;
+}
+/*-ga*/
+
+static void sleep_catcher(int sig, siginfo_t *si, void *uc){
+	ucontext_t* ucp = (ucontext_t*) uc;
+	dccthread_t* dummy = (dccthread_t*) malloc (sizeof(dccthread_t));
+	dummy->stimerid = si->si_timerid;
+   	dccthread_t* t_dependent = (dccthread_t*) dlist_find_remove(lista_espera, dummy, esta_esperando_sleep, NULL);
+
+	if(t_dependent != NULL){
+		t_dependent->na_lista_espera = 0;
+		t_dependent->na_lista_prontos = 1;
+		dlist_push_right(lista_prontos, t_dependent);
+	}
+	setcontext( ucp );
+}
+
 void dccthread_init(void (*func)(int), int param){
+    acao_sleep.sa_flags = SA_SIGINFO;
+	acao_sleep.sa_sigaction = sleep_catcher;
+	sigaction(SIGUSR2, &acao_sleep, NULL);
+	sigemptyset(&acao_sleep.sa_mask);
+	//sigaddset(&sleep_act.sa_mask, SIGUSR2);
+	sleep.sigev_notify = SIGEV_SIGNAL;
+	sleep.sigev_signo = SIGUSR2;
+
+
+
     /*ga-*/
     lista_prontos = dlist_create();
 	lista_espera = dlist_create();
@@ -133,17 +170,6 @@ int esta_esperando(const void *e1, const void *e2, void *userdata){
     }
 }
 /*-gu*/
-
-/*ga*/
-int esta_esperando_sleep(const void *e1, const void *e2, void *userdata){
-	dccthread_t* e_list = (dccthread_t*) e1;
-	dccthread_t* e_dummy = (dccthread_t*) e2;
-	if(e_list->stimerid == e_dummy->stimerid)
-		return 0;
-	else
-		return 1;
-}
-/*-ga*/
 
 /*gu-*/
 void dccthread_exit(void){
