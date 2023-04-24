@@ -17,7 +17,6 @@ typedef struct dccthread {
     bool na_lista_espera;
     bool na_lista_prontos;
     dccthread_t* esperando;
-    int id_timer;
     int stimerid;
 } dccthread_t;
 
@@ -216,7 +215,7 @@ void dccthread_sleep(struct timespec ts){
 	its.it_value = ts;
 
 	dccthread_t* atual = dccthread_self();
-	atual->id_timer = sleeptid;
+	atual->stimerid = sleeptid;
 	sleeptid++;
 
 	atual->na_lista_prontos = 0;
