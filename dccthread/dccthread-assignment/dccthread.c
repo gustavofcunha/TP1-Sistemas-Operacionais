@@ -98,7 +98,7 @@ void dccthread_init(void (*func)(int), int param){
 		swapcontext(&gerente->contexto, &temp->contexto);
 		dlist_pop_left(lista_prontos);
 
-        if(temp->cedido == 1){
+        if(temp->cedido == true){
             temp->na_lista_prontos = 0;
         }
 	}
@@ -117,12 +117,14 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
 	nova_thread->contexto.uc_stack.ss_size = THREAD_STACK_SIZE;
 	nova_thread->contexto.uc_stack.ss_flags = 0;
 
-	nova_thread->id = contador_thread; contador_thread++;
+	nova_thread->id = contador_thread; 
+    contador_thread++;
     strcpy(nova_thread->nome, name);
 
     nova_thread->na_lista_espera = false;
     nova_thread->na_lista_prontos = true;
     nova_thread->esperando = NULL;
+    nova_thread->cedido = false;
     dlist_push_right(lista_prontos, nova_thread);
 
     makecontext(&nova_thread->contexto, (void*) func, 1, param);
