@@ -161,7 +161,7 @@ const char* dccthread_name(dccthread_t *tid){
 
 /*gu-*/
 /*verifica se e1 esta esperando e2*/
-int esta_esperando(const void *e1, const void *e2, void *userdata){
+int esta_esperando_exit(const void *e1, const void *e2, void *userdata){
 	dccthread_t* e_list = (dccthread_t*) e1;
 	dccthread_t* e_exit = (dccthread_t*) e2;
 
@@ -178,7 +178,7 @@ void dccthread_exit(void){
     dccthread_t* atual = dccthread_self();
 
     dccthread_t* processo_em_espera =
-    (dccthread_t *) dlist_find_remove(lista_espera, atual, esta_esperando, NULL);
+    (dccthread_t *) dlist_find_remove(lista_espera, atual, esta_esperando_exit, NULL);
 
     if(processo_em_espera != NULL){
         processo_em_espera->na_lista_espera = false;
