@@ -23,10 +23,11 @@ typedef struct dccthread {
 struct dlist *lista_prontos;
 struct dlist *lista_espera;
 
-//evento que indica quando o timer de sleep expirou
 struct sigevent sleep;
-//acao ao receber chamada de sistema do sleep
 struct sigaction acao_sleep;
+struct sigevent sinal;
+struct sigaction acao_sinal;
+struct itimerspec its;
 
 dccthread_t *gerente;
 dccthread_t *principal;
@@ -59,16 +60,30 @@ static void sleep_catcher(int sig, siginfo_t *si, void *uc){
 	setcontext( ucp );
 }
 
+static void timer_catcher(int sig, siginfo_t *si, void *uc){
+    dccthread_yield();
+}
+
 void dccthread_init(void (*func)(int), int param){
+    acao_sinal.sa_flags = SA_SIGINFO;
+	acao_sinal.sa_sigaction = timer_catcher;
+	sigaction(SIGUSR1, &acao_sinal, NULL);
+	sigemptyset(&acao_sinal.sa_mask);
+	sigaddset(&acao_sinal.sa_mask, SIGUSR1);
+	sinal.sigev_notify = SIGEV_SIGNAL;
+	sinal.sigev_signo = SIGUSR1;
+
+    its.it_value.tv_nsec = 10000000;
+	its.it_interval.tv_nsec = its.it_value.tv_nsec;
+
+
     acao_sleep.sa_flags = SA_SIGINFO;
 	acao_sleep.sa_sigaction = sleep_catcher;
-	sigaction(SIGUSR2, &acao_sleep, NULL);
+	sigaction(SIGUSR2,&acao_sleep,NULL);
 	sigemptyset(&acao_sleep.sa_mask);
 	//sigaddset(&sleep_act.sa_mask, SIGUSR2);
 	sleep.sigev_notify = SIGEV_SIGNAL;
 	sleep.sigev_signo = SIGUSR2;
-
-
 
     /*ga-*/
     lista_prontos = dlist_create();
