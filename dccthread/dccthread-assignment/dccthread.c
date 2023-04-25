@@ -8,7 +8,6 @@
 #include "dlist.h"
 #include "dccthread.h"
 
-
 typedef struct dccthread {
     int id;
     char nome[DCCTHREAD_MAX_NAME_SIZE];
@@ -34,10 +33,18 @@ dccthread_t *principal;
 int contador_thread = 0;
 int sleeptid = 1;
 
+timer_t timerid;
+struct sigevent sigev;
+struct sigaction sact;
+struct itimerspec its;
+struct sigevent sleep_ev;
+struct sigaction sleep_act;
+
 /*ga*/
 int esta_esperando_sleep(const void *e1, const void *e2, void *userdata){
 	dccthread_t* e_list = (dccthread_t*) e1;
 	dccthread_t* e_dummy = (dccthread_t*) e2;
+
 	if(e_list->stimerid == e_dummy->stimerid)
 		return 0;
 	else
@@ -46,8 +53,10 @@ int esta_esperando_sleep(const void *e1, const void *e2, void *userdata){
 /*-ga*/
 
 static void sleep_catcher(int sig, siginfo_t *si, void *uc){
+    sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
+
 	ucontext_t* ucp = (ucontext_t*) uc;
-	dccthread_t* dummy = (dccthread_t*) malloc (sizeof(dccthread_t));
+	dccthread_t* dummy = (dccthread_t*) malloc(sizeof(dccthread_t));
 	dummy->stimerid = si->si_timerid;
    	dccthread_t* t_dependent = (dccthread_t*) dlist_find_remove(lista_espera, dummy, esta_esperando_sleep, NULL);
 
@@ -56,21 +65,40 @@ static void sleep_catcher(int sig, siginfo_t *si, void *uc){
 		t_dependent->na_lista_prontos = 1;
 		dlist_push_right(lista_prontos, t_dependent);
 	}
-	setcontext( ucp );
+
+	setcontext(ucp);
+}
+
+static void timer_catcher(int sig, siginfo_t *si, void *uc){
+    dccthread_yield();
 }
 
 void dccthread_init(void (*func)(int), int param){
+    sact.sa_flags = SA_SIGINFO;
+	sact.sa_sigaction = timer_catcher;
+
+	sigaction(SIGUSR1, &sact, NULL);
+
+	sigev.sigev_notify = SIGEV_SIGNAL;
+	sigev.sigev_signo = SIGUSR1;
+
+    sigemptyset(&sact.sa_mask);
+	sigaddset(&sact.sa_mask, SIGUSR1);
+
+	timer_create(CLOCK_PROCESS_CPUTIME_ID, &sigev, &timerid);
+
+	its.it_value.tv_nsec = 10000000;
+	its.it_interval.tv_nsec = its.it_value.tv_nsec;
+
     acao_sleep.sa_flags = SA_SIGINFO;
 	acao_sleep.sa_sigaction = sleep_catcher;
+
 	sigaction(SIGUSR2, &acao_sleep, NULL);
 	sigemptyset(&acao_sleep.sa_mask);
-	//sigaddset(&sleep_act.sa_mask, SIGUSR2);
+
 	sleep.sigev_notify = SIGEV_SIGNAL;
 	sleep.sigev_signo = SIGUSR2;
 
-
-
-    /*ga-*/
     lista_prontos = dlist_create();
 	lista_espera = dlist_create();
 
@@ -90,6 +118,7 @@ void dccthread_init(void (*func)(int), int param){
 
     principal = dccthread_create("main", func, param);
 
+    sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
     while(!dlist_empty(lista_prontos)){
 		dccthread_t *temp = (dccthread_t*) malloc(sizeof(dccthread_t));
 		temp = lista_prontos->head->data;
@@ -103,20 +132,20 @@ void dccthread_init(void (*func)(int), int param){
 	}
 
     exit(EXIT_SUCCESS);
-    /*-ga*/
 }
 
 /*ga-*/
 dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
     dccthread_t *nova_thread = (dccthread_t*) malloc(sizeof(dccthread_t));
     getcontext(&nova_thread->contexto);
+    sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
 
     nova_thread->contexto.uc_link = &gerente->contexto;
 	nova_thread->contexto.uc_stack.ss_sp = malloc(THREAD_STACK_SIZE);
 	nova_thread->contexto.uc_stack.ss_size = THREAD_STACK_SIZE;
 	nova_thread->contexto.uc_stack.ss_flags = 0;
 
-	nova_thread->id = contador_thread; 
+	nova_thread->id = contador_thread;
     contador_thread++;
     strcpy(nova_thread->nome, name);
 
@@ -127,34 +156,34 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
     dlist_push_right(lista_prontos, nova_thread);
 
     makecontext(&nova_thread->contexto, (void*) func, 1, param);
+    sigprocmask(SIG_UNBLOCK, &sact.sa_mask, NULL);
+
     return nova_thread;
 }
 /*-ga*/
 
 /*gu-*/
 void dccthread_yield(void){
-    /*obtem contexto da thread atual e coloca no final da lista*/
-    dccthread_t* contexto_atual = dccthread_self();
+    sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
+    dccthread_t* contexto_atual = dccthread_self(); /*obtem contexto da thread atual e coloca no final da lista*/
 
     contexto_atual->cedido = true;
-    dlist_push_right(lista_prontos, contexto_atual);
 
-    /*muda de contexto para thread gerente*/
-    swapcontext(&contexto_atual->contexto, &gerente->contexto);
+    dlist_push_right(lista_prontos, contexto_atual);
+    swapcontext(&contexto_atual->contexto, &gerente->contexto); /*muda de contexto para thread gerente*/
+    sigprocmask(SIG_UNBLOCK, &sact.sa_mask, NULL);
 }
 /*-gu*/
 
 /*gu-*/
 dccthread_t* dccthread_self(void){
-    /*retorna contexto da thread em execucao*/
-    return lista_prontos->head->data;
+    return lista_prontos->head->data; /*retorna contexto da thread em execucao*/
 }
 /*-gu*/
 
 /*gu-*/
-/*retorna nome da thread recebida como parametro*/
 const char* dccthread_name(dccthread_t *tid){
-    return tid->nome;
+    return tid->nome; /*retorna nome da thread recebida como parametro*/
 }
 /*-gu*/
 
@@ -175,6 +204,7 @@ int esta_esperando_exit(const void *e1, const void *e2, void *userdata){
 /*gu-*/
 void dccthread_exit(void){
     dccthread_t* atual = dccthread_self();
+    sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
 
     dccthread_t* processo_em_espera =
     (dccthread_t *) dlist_find_remove(lista_espera, atual, esta_esperando_exit, NULL);
@@ -182,16 +212,18 @@ void dccthread_exit(void){
     if(processo_em_espera != NULL){
         processo_em_espera->na_lista_espera = false;
         processo_em_espera->na_lista_prontos = true;
+
         dlist_push_right(lista_prontos, processo_em_espera);
     }
 
-    /*muda contexto para thread gerente*/
-    setcontext(&gerente->contexto);
+    sigprocmask(SIG_UNBLOCK, &sact.sa_mask, NULL);
+    setcontext(&gerente->contexto); /*muda contexto para thread gerente*/
 }
 /*-gu*/
 
 /*gu-*/
 void dccthread_wait(dccthread_t *tid){
+    sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
     dccthread_t* atual = dccthread_self();
 
     if(tid->na_lista_espera || tid->na_lista_prontos){
@@ -202,13 +234,16 @@ void dccthread_wait(dccthread_t *tid){
 
 		swapcontext(&atual->contexto, &gerente->contexto);
 	}
+
+    sigprocmask(SIG_UNBLOCK, &sact.sa_mask, NULL);
 }
 /*-gu*/
 
 /*gu-*/
 void dccthread_sleep(struct timespec ts){
-    //cria novo timer
-	timer_t id_timer;
+    sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
+
+	timer_t id_timer; //cria novo timer
 	timer_create(CLOCK_REALTIME, &sleep, &id_timer);
 
     struct itimerspec its;
@@ -222,9 +257,9 @@ void dccthread_sleep(struct timespec ts){
 	atual->na_lista_espera = 1;
 	dlist_push_right(lista_espera, atual);
 
-    //arma o timer criado acima (com id id_timer)
-	timer_settime(id_timer, 0, &its, NULL);
+	timer_settime(id_timer, 0, &its, NULL); //arma o timer criado acima (com id id_timer)
 
 	swapcontext(&atual->contexto, &gerente->contexto);
+    sigprocmask(SIG_UNBLOCK, &sact.sa_mask, NULL);
 }
 /*-gu*/
