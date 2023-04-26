@@ -22,23 +22,19 @@ typedef struct dccthread {
 struct dlist *lista_prontos;
 struct dlist *lista_espera;
 
-//evento que indica quando o timer de sleep expirou
-struct sigevent sleep;
-//acao ao receber chamada de sistema do sleep
-struct sigaction acao_sleep;
-
 dccthread_t *gerente;
 dccthread_t *principal;
 
 int contador_thread = 0;
 int sleeptid = 1;
 
-timer_t timerid;
+struct sigevent sleep;
+struct sigaction acao_sleep;
 struct sigevent sigev;
 struct sigaction sact;
+
+timer_t timerid;
 struct itimerspec its;
-struct sigevent sleep_ev;
-struct sigaction sleep_act;
 
 /*ga*/
 int esta_esperando_sleep(const void *e1, const void *e2, void *userdata){
@@ -61,8 +57,8 @@ static void sleep_catcher(int sig, siginfo_t *si, void *uc){
    	dccthread_t* t_dependent = (dccthread_t*) dlist_find_remove(lista_espera, dummy, esta_esperando_sleep, NULL);
 
 	if(t_dependent != NULL){
-		t_dependent->na_lista_espera = 0;
-		t_dependent->na_lista_prontos = 1;
+		t_dependent->na_lista_espera = false;
+		t_dependent->na_lista_prontos = true;
 		dlist_push_right(lista_prontos, t_dependent);
 	}
 
@@ -129,7 +125,7 @@ void dccthread_init(void (*func)(int), int param){
 		dlist_pop_left(lista_prontos);
 
         if(temp->cedido == true){
-            temp->na_lista_prontos = 0;
+            temp->na_lista_prontos = false;
         }
 	}
 
@@ -138,8 +134,10 @@ void dccthread_init(void (*func)(int), int param){
 
 /*ga-*/
 dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
-    dccthread_t *nova_thread = (dccthread_t*) malloc(sizeof(dccthread_t));
+    dccthread_t *nova_thread;
+	nova_thread = (dccthread_t*) malloc(sizeof(dccthread_t));
     getcontext(&nova_thread->contexto);
+
     sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
 
     nova_thread->contexto.uc_link = &gerente->contexto;
@@ -229,8 +227,8 @@ void dccthread_wait(dccthread_t *tid){
     dccthread_t* atual = dccthread_self();
 
     if(tid->na_lista_espera || tid->na_lista_prontos){
-		atual->na_lista_prontos = 0;
-		atual->na_lista_espera = 1;
+		atual->na_lista_prontos = false;
+		atual->na_lista_espera = true;
 		atual->esperando = tid;
 		dlist_push_right(lista_espera, atual);
 
@@ -255,8 +253,8 @@ void dccthread_sleep(struct timespec ts){
 	atual->stimerid = sleeptid;
 	sleeptid++;
 
-	atual->na_lista_prontos = 0;
-	atual->na_lista_espera = 1;
+	atual->na_lista_prontos = false;
+	atual->na_lista_espera = true;
 	dlist_push_right(lista_espera, atual);
 
 	timer_settime(id_timer, 0, &its, NULL); //arma o timer criado acima (com id id_timer)
