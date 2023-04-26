@@ -123,6 +123,8 @@ void dccthread_init(void (*func)(int), int param){
 		dccthread_t *temp = (dccthread_t*) malloc(sizeof(dccthread_t));
 		temp = lista_prontos->head->data;
 
+        timer_settime(timerid, 0, &its, NULL);
+        
 		swapcontext(&gerente->contexto, &temp->contexto);
 		dlist_pop_left(lista_prontos);
 
