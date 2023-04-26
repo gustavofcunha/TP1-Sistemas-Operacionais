@@ -27,19 +27,19 @@ PetBBC. Signal, 2023. Disponível em: https://petbcc.ufscar.br/signal/.
   1. Descreva e justifique as estruturas de dados utilizadas para
      gerência das threads de espaço do usuário (partes 1, 2 e 5).
   
-    * struct dccthread: para a abastração de uma thread, utilizamos esta struct, que contém os atributos necessários para gerência no espaço do usuário. Optamos por utilizar a struct por ser uma estrutura de dados autocontida e orientada a objetos, atendendo bem os objetivos do trabalho.
+    * struct dccthread: para a abstração de uma thread, utilizamos esta struct, que contém os atributos necessários para gerência no espaço do usuário. Optamos por utilizar a struct por ser uma estrutura de dados autocontida e orientada a objetos, atendendo bem os objetivos do trabalho.
 
     * struct dlist *lista_prontos: lista encadeada fornecida pelo professor, utilizada para armazenar as threads no estado "ready". Optamos por utilizar esta estrutura de dados por ser de fácil manipulação (adição e remoção de elementos).
 
     * struct dlist *lista_espera: lista encadeada fornecida pelo professor, utilizada para armazenar as threads no estado "waiting". Optamos por utilizar esta estrutura de dados por ser de fácil manipulação (adição e remoção de elementos).
 
-    * struct sigevent sleep: esta é uma estrutura para notificação de rotinas assíncronas, utilizada para eventos de "sleep". Optamos por utuilizá-la uma vez que já há uma biblioteca com todas as funcionalidades já implementadas.
+    * struct sigevent sleep: esta é uma estrutura para notificação de rotinas assíncronas, utilizada para eventos de "sleep". Optamos por utilizá-la uma vez que já há uma biblioteca com todas as funcionalidades já implementadas.
     
-    * struct sigaction acao_sleep: esta é uma estrutura que examina e muda ações de "sleep". Optamos por utuilizá-la uma vez que já há uma biblioteca com todas as funcionalidades já implementadas.
+    * struct sigaction acao_sleep: esta é uma estrutura que examina e muda ações de "sleep". Optamos por utilizá-la uma vez que já há uma biblioteca com todas as funcionalidades já implementadas.
 
-    * struct sigevent sigev: esta é uma estrutura para notificação de rotinas assíncronas, utilizada para eventos de "signal". Optamos por utuilizá-la uma vez que já há uma biblioteca com todas as funcionalidades já implementadas.
+    * struct sigevent sigev: esta é uma estrutura para notificação de rotinas assíncronas, utilizada para eventos de "signal". Optamos por utilizá-la uma vez que já há uma biblioteca com todas as funcionalidades já implementadas.
 
-    * struct sigaction sact: esta é uma estrutura que examina e muda ações de "signal". Optamos por utuilizá-la uma vez que já há uma biblioteca com todas as funcionalidades já implementadas.
+    * struct sigaction sact: esta é uma estrutura que examina e muda ações de "signal". Optamos por utilizá-la uma vez que já há uma biblioteca com todas as funcionalidades já implementadas.
 
   2. Descreva o mecanismo utilizado para sincronizar chamadas de
      dccthread_yield e disparos do temporizador (parte 4).
