@@ -48,6 +48,20 @@ int esta_esperando_sleep(const void *e1, const void *e2, void *userdata){
 }
 /*-ga*/
 
+/*gu-*/
+/*verifica se e1 esta esperando e2*/
+int esta_esperando_exit(const void *e1, const void *e2, void *userdata){
+	dccthread_t* e_list = (dccthread_t*) e1;
+	dccthread_t* e_exit = (dccthread_t*) e2;
+
+	if(e_exit == e_list->esperando){
+		return 0;
+    } else {
+		return 1;
+    }
+}
+/*-gu*/
+
 static void sleep_catcher(int sig, siginfo_t *si, void *uc){
     sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
 
@@ -120,11 +134,11 @@ void dccthread_init(void (*func)(int), int param){
 		temp = lista_prontos->head->data;
 
         timer_settime(timerid, 0, &its, NULL);
-        
+
 		swapcontext(&gerente->contexto, &temp->contexto);
 		dlist_pop_left(lista_prontos);
 
-        if(temp->cedido == true){
+        if(temp->cedido == false){
             temp->na_lista_prontos = false;
         }
 	}
@@ -184,20 +198,6 @@ dccthread_t* dccthread_self(void){
 /*gu-*/
 const char* dccthread_name(dccthread_t *tid){
     return tid->nome; /*retorna nome da thread recebida como parametro*/
-}
-/*-gu*/
-
-/*gu-*/
-/*verifica se e1 esta esperando e2*/
-int esta_esperando_exit(const void *e1, const void *e2, void *userdata){
-	dccthread_t* e_list = (dccthread_t*) e1;
-	dccthread_t* e_exit = (dccthread_t*) e2;
-
-	if(e_exit == e_list->esperando){
-		return 0;
-    } else {
-		return 1;
-    }
 }
 /*-gu*/
 
