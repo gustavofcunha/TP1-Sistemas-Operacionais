@@ -12,22 +12,23 @@ typedef struct dccthread {
     int id;
     char nome[DCCTHREAD_MAX_NAME_SIZE];
     ucontext_t contexto; /* Estrutura para armazenamento das informações de contexto da thread */
-    bool cedido;
+    bool cedido; /* Indicador de que se cedeu a vez */
     bool na_lista_espera; /* Indicador de espera */
     bool na_lista_prontos; /* Indicador de espera */
     dccthread_t* esperando; /* Ponteiro para a thread o qual deve ser esperada */
-    int stimerid;
+    int stimerid; 
 } dccthread_t;
 
 struct dlist *lista_prontos; /* Lista de threads em situação de pronto */
 struct dlist *lista_espera; /* Lista de threads em situação de espera */
 
-dccthread_t *gerente;
-dccthread_t *principal;
+dccthread_t *gerente; /* Thread gerente */
+dccthread_t *principal; /* Thread main */
 
-int contador_thread = 0;
-int sleeptid = 1;
+int contador_thread = 0; /* Contador de thread */
+int sleeptid = 1; /* indicador de sleep */
 
+/* Estruturas para tratar condição de corrida e para preempção
 struct sigevent sleep;
 struct sigaction acao_sleep;
 struct sigevent sigev;
@@ -64,7 +65,7 @@ int esta_esperando_exit(const void *e1, const void *e2, void *userdata){
 /* Recupera thread em sleep */ 
 static void sleep_catcher(int sig, siginfo_t *si, void *uc){
     sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
-
+	
 	ucontext_t* ucp = (ucontext_t*) uc;
 	dccthread_t* dummy = (dccthread_t*) malloc(sizeof(dccthread_t));
 	dummy->stimerid = si->si_timerid;
@@ -86,6 +87,7 @@ static void timer_catcher(int sig, siginfo_t *si, void *uc){
 
 /* Inicializa threads gerente e main; Inicializa temporizador de preempção */
 void dccthread_init(void (*func)(int), int param){
+	/* Inicializa o temporizador */
     sact.sa_flags = SA_SIGINFO;
 	sact.sa_sigaction = timer_catcher;
 
@@ -238,9 +240,10 @@ void dccthread_wait(dccthread_t *tid){
 /* Interrompe a thread atual pelo período de tempo passado como parâmetro */
 void dccthread_sleep(struct timespec ts){
     sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
-
-	timer_t id_timer; //cria novo timer
-	timer_create(CLOCK_REALTIME, &sleep, &id_timer);
+	
+	
+	timer_t id_timer; 
+	timer_create(CLOCK_REALTIME, &sleep, &id_timer); // Cria novo timer
 
     struct itimerspec its;
 	its.it_value = ts;
