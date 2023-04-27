@@ -11,16 +11,16 @@
 typedef struct dccthread {
     int id;
     char nome[DCCTHREAD_MAX_NAME_SIZE];
-    ucontext_t contexto;
+    ucontext_t contexto; /* Estrutura para armazenamento das informações de contexto da thread */
     bool cedido;
-    bool na_lista_espera;
-    bool na_lista_prontos;
-    dccthread_t* esperando;
+    bool na_lista_espera; /* Indicador de espera */
+    bool na_lista_prontos; /* Indicador de espera */
+    dccthread_t* esperando; /* Ponteiro para a thread o qual deve ser esperada */
     int stimerid;
 } dccthread_t;
 
-struct dlist *lista_prontos;
-struct dlist *lista_espera;
+struct dlist *lista_prontos; /* Lista de threads em situação de pronto */
+struct dlist *lista_espera; /* Lista de threads em situação de espera */
 
 dccthread_t *gerente;
 dccthread_t *principal;
@@ -33,23 +33,23 @@ struct sigaction acao_sleep;
 struct sigevent sigev;
 struct sigaction sact;
 
+/* Temporizador de preempção */
 timer_t timerid;
 struct itimerspec its;
 
-/*ga*/
+/* Verifica se está esperando em sleep */
 int esta_esperando_sleep(const void *e1, const void *e2, void *userdata){
 	dccthread_t* e_list = (dccthread_t*) e1;
 	dccthread_t* e_dummy = (dccthread_t*) e2;
 
-	if(e_list->stimerid == e_dummy->stimerid)
+	if(e_list->stimerid == e_dummy->stimerid){
 		return 0;
-	else
+	} else {
 		return 1;
+	}
 }
-/*-ga*/
 
-/*gu-*/
-/*verifica se e1 esta esperando e2*/
+/* Verifica se e1 esta esperando e2 */
 int esta_esperando_exit(const void *e1, const void *e2, void *userdata){
 	dccthread_t* e_list = (dccthread_t*) e1;
 	dccthread_t* e_exit = (dccthread_t*) e2;
@@ -60,8 +60,8 @@ int esta_esperando_exit(const void *e1, const void *e2, void *userdata){
 		return 1;
     }
 }
-/*-gu*/
 
+/* Recupera thread em sleep */ 
 static void sleep_catcher(int sig, siginfo_t *si, void *uc){
     sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
 
@@ -79,10 +79,12 @@ static void sleep_catcher(int sig, siginfo_t *si, void *uc){
 	setcontext(ucp);
 }
 
+/* Aciona o temporizador de preempção */
 static void timer_catcher(int sig, siginfo_t *si, void *uc){
     dccthread_yield();
 }
 
+/* Inicializa threads gerente e main; Inicializa temporizador de preempção */
 void dccthread_init(void (*func)(int), int param){
     sact.sa_flags = SA_SIGINFO;
 	sact.sa_sigaction = timer_catcher;
@@ -146,7 +148,7 @@ void dccthread_init(void (*func)(int), int param){
     exit(EXIT_SUCCESS);
 }
 
-/*ga-*/
+/* Cria uma nova thread e a coloca na lista de prontos */
 dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
     dccthread_t *nova_thread;
 	nova_thread = (dccthread_t*) malloc(sizeof(dccthread_t));
@@ -174,34 +176,30 @@ dccthread_t* dccthread_create(const char *name, void (*func)(int), int param){
 
     return nova_thread;
 }
-/*-ga*/
 
-/*gu-*/
+/* Retira o processo em execução da CPU e o coloca no fim da fila de execução */
 void dccthread_yield(void){
     sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
-    dccthread_t* contexto_atual = dccthread_self(); /*obtem contexto da thread atual e coloca no final da lista*/
+    dccthread_t* contexto_atual = dccthread_self(); /* Obtém contexto da thread atual */
 
     contexto_atual->cedido = true;
 
-    dlist_push_right(lista_prontos, contexto_atual);
-    swapcontext(&contexto_atual->contexto, &gerente->contexto); /*muda de contexto para thread gerente*/
+    dlist_push_right(lista_prontos, contexto_atual); /* Coloca o contexto no final da fila */
+    swapcontext(&contexto_atual->contexto, &gerente->contexto); /* Muda de contexto para thread gerente */
     sigprocmask(SIG_UNBLOCK, &sact.sa_mask, NULL);
 }
-/*-gu*/
 
-/*gu-*/
+/* Retorna contexto da thread em execução */
 dccthread_t* dccthread_self(void){
-    return lista_prontos->head->data; /*retorna contexto da thread em execucao*/
+    return lista_prontos->head->data; 
 }
-/*-gu*/
 
-/*gu-*/
+/* Retorna um ponteiro para uma string contendo o nome da thread recebida como parametro */
 const char* dccthread_name(dccthread_t *tid){
-    return tid->nome; /*retorna nome da thread recebida como parametro*/
+    return tid->nome; 
 }
-/*-gu*/
 
-/*gu-*/
+/* Termina a thread atual, liberando os recursos associados */
 void dccthread_exit(void){
     dccthread_t* atual = dccthread_self();
     sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
@@ -219,9 +217,8 @@ void dccthread_exit(void){
     sigprocmask(SIG_UNBLOCK, &sact.sa_mask, NULL);
     setcontext(&gerente->contexto); /*muda contexto para thread gerente*/
 }
-/*-gu*/
 
-/*gu-*/
+/* Bloqueia a thread atual até que a thread recebida como parâmetro termine */
 void dccthread_wait(dccthread_t *tid){
     sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
     dccthread_t* atual = dccthread_self();
@@ -237,9 +234,8 @@ void dccthread_wait(dccthread_t *tid){
 
     sigprocmask(SIG_UNBLOCK, &sact.sa_mask, NULL);
 }
-/*-gu*/
 
-/*gu-*/
+/* Interrompe a thread atual pelo período de tempo passado como parâmetro */
 void dccthread_sleep(struct timespec ts){
     sigprocmask(SIG_BLOCK, &sact.sa_mask, NULL);
 
@@ -257,9 +253,8 @@ void dccthread_sleep(struct timespec ts){
 	atual->na_lista_espera = true;
 	dlist_push_right(lista_espera, atual);
 
-	timer_settime(id_timer, 0, &its, NULL); //arma o timer criado acima (com id id_timer)
+	timer_settime(id_timer, 0, &its, NULL); // Arma o timer criado (com id id_timer)
 
 	swapcontext(&atual->contexto, &gerente->contexto);
     sigprocmask(SIG_UNBLOCK, &sact.sa_mask, NULL);
 }
-/*-gu*/
