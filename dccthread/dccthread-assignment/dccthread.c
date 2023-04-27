@@ -28,7 +28,7 @@ dccthread_t *principal; /* Thread main */
 int contador_thread = 0; /* Contador de thread */
 int sleeptid = 1; /* indicador de sleep */
 
-/* Estruturas para tratar condição de corrida e para preempção
+/* Estruturas para tratar condição de corrida e para preempção */
 struct sigevent sleep;
 struct sigaction acao_sleep;
 struct sigevent sigev;
