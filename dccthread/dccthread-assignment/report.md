@@ -43,3 +43,4 @@ PetBBC. Signal, 2023. Disponível em: https://petbcc.ufscar.br/signal/.
 
   2. Descreva o mecanismo utilizado para sincronizar chamadas de
      dccthread_yield e disparos do temporizador (parte 4).
+    O mecanismo utilizado para sincronização do dccthread_yield e disparos do temporizador foram os disponibilizados peça biblioteca signal.h e time.h. Os eventos de clock são providos pela estrutura sigevent e a ação, a cada sinal, pela estrutura sigaction. Assim, definimos na função init que o parâmetro sa_sigaction seria a função timer_cather, que chama dccthread_yield que, por sua vez, faz a troca de contexto.
